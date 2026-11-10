@@ -57,10 +57,17 @@ def choose_output_crs(aoi: AOI) -> CRS:
 
 def initialize_earth_engine(project: str | None) -> None:
     try:
-        if project:
-            ee.Initialize(project=project)
-        else:
-            ee.Initialize()
+        try:  # the machine's Google login (gcloud application-default) first, then Earth Engine's own credentials
+            import google.auth
+
+            creds, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/earthengine",
+                                                   "https://www.googleapis.com/auth/cloud-platform"])
+            ee.Initialize(credentials=creds, project=project)
+        except Exception:
+            if project:
+                ee.Initialize(project=project)
+            else:
+                ee.Initialize()
     except Exception as exc:  # pragma: no cover - depends on local EE auth
         raise RuntimeError(
             "No se ha podido inicializar Earth Engine. Ejecuta `earthengine authenticate` "
